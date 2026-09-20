@@ -1,0 +1,353 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"000000000000000000000001" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastUpgradeCheck" = "1600";
+				"TargetAttributes" = {
+					"000000000000000000000021" = {
+						"CreatedOnToolsVersion" = "16.0";
+					};
+					"000000000000000000000024" = {
+						"CreatedOnToolsVersion" = "16.0";
+						"TestTargetID" = "000000000000000000000021";
+					};
+				};
+			};
+			"buildConfigurationList" = "00000000000000000000001A";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "00000000000000000000000B";
+			"productRefGroup" = "00000000000000000000000A";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"packageReferences" = (
+				"00000000000000000000000C",
+			);
+			"targets" = (
+				"000000000000000000000021",
+				"000000000000000000000024",
+			);
+		};
+		"000000000000000000000002" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"path" = "RefresherExample.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"000000000000000000000003" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"path" = "RefresherExampleUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"000000000000000000000004" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AppDelegate.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000005" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "ExampleViewController.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000006" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"path" = "Info.plist";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000007" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "RefresherExampleUITests.swift";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000008" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000004",
+				"000000000000000000000005",
+				"000000000000000000000006",
+			);
+			"path" = "RefresherExample";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000009" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000007",
+			);
+			"path" = "RefresherExampleUITests";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000000A" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000002",
+				"000000000000000000000003",
+			);
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000000B" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"000000000000000000000008",
+				"000000000000000000000009",
+				"00000000000000000000000A",
+			);
+			"sourceTree" = "<group>";
+		};
+		"00000000000000000000000C" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "..";
+		};
+		"00000000000000000000000D" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "00000000000000000000000C";
+			"productName" = "Refresher";
+		};
+		"00000000000000000000000E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000004";
+		};
+		"00000000000000000000000F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000005";
+		};
+		"000000000000000000000010" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"00000000000000000000000E",
+				"00000000000000000000000F",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000011" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "000000000000000000000007";
+		};
+		"000000000000000000000012" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"000000000000000000000011",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000013" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "00000000000000000000000D";
+		};
+		"000000000000000000000014" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"000000000000000000000013",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000015" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000016" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000017" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000018" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"IPHONEOS_DEPLOYMENT_TARGET" = "16.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "5.0";
+				"CLANG_ENABLE_MODULES" = "YES";
+				"ENABLE_TESTABILITY" = "YES";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG $(inherited)";
+				"ONLY_ACTIVE_ARCH" = "YES";
+			};
+		};
+		"000000000000000000000019" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"IPHONEOS_DEPLOYMENT_TARGET" = "16.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "5.0";
+				"CLANG_ENABLE_MODULES" = "YES";
+				"ENABLE_TESTABILITY" = "YES";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+			};
+		};
+		"00000000000000000000001A" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"000000000000000000000018",
+				"000000000000000000000019",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"00000000000000000000001B" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.weixi.RefresherExample";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"INFOPLIST_FILE" = "RefresherExample/Info.plist";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "";
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG $(inherited)";
+				"ONLY_ACTIVE_ARCH" = "YES";
+			};
+		};
+		"00000000000000000000001C" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.weixi.RefresherExample";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"INFOPLIST_FILE" = "RefresherExample/Info.plist";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "";
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+			};
+		};
+		"00000000000000000000001D" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"00000000000000000000001B",
+				"00000000000000000000001C",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"00000000000000000000001E" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.weixi.RefresherExampleUITests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "RefresherExample";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG $(inherited)";
+				"ONLY_ACTIVE_ARCH" = "YES";
+			};
+		};
+		"00000000000000000000001F" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.weixi.RefresherExampleUITests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "RefresherExample";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+			};
+		};
+		"000000000000000000000020" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"00000000000000000000001E",
+				"00000000000000000000001F",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000021" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "00000000000000000000001D";
+			"buildPhases" = (
+				"000000000000000000000010",
+				"000000000000000000000014",
+				"000000000000000000000016",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"name" = "RefresherExample";
+			"packageProductDependencies" = (
+				"00000000000000000000000D",
+			);
+			"productName" = "RefresherExample";
+			"productReference" = "000000000000000000000002";
+			"productType" = "com.apple.product-type.application";
+		};
+		"000000000000000000000022" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "000000000000000000000001";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "000000000000000000000021";
+			"remoteInfo" = "RefresherExample";
+		};
+		"000000000000000000000023" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "000000000000000000000021";
+			"targetProxy" = "000000000000000000000022";
+		};
+		"000000000000000000000024" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "000000000000000000000020";
+			"buildPhases" = (
+				"000000000000000000000012",
+				"000000000000000000000015",
+				"000000000000000000000017",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"000000000000000000000023",
+			);
+			"name" = "RefresherExampleUITests";
+			"productName" = "RefresherExampleUITests";
+			"productReference" = "000000000000000000000003";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+		};
+	};
+	"rootObject" = "000000000000000000000001";
+}
