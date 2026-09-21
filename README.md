@@ -8,7 +8,7 @@ One controller owns loading. Your async closures own data. Headers and footers o
 
 Requires iOS 16+ and Swift 6 tooling (Xcode 16+). The package uses Swift 5 language mode.
 
-In Xcode, choose **File → Add Package Dependencies**, enter `https://github.com/Weixi779/Refresher.git`, and select **Up to Next Minor Version** starting at **0.1.0**. Link the `Refresher` product to your app target.
+In Xcode, choose **File → Add Package Dependencies**, enter `https://github.com/Weixi779/Refresher.git`, and select **Up to Next Minor Version** starting at **0.2.0**. Link the `Refresher` product to your app target.
 
 For a `Package.swift` dependency:
 
@@ -16,7 +16,7 @@ For a `Package.swift` dependency:
 dependencies: [
     .package(
         url: "https://github.com/Weixi779/Refresher.git",
-        .upToNextMinor(from: "0.1.0")
+        .upToNextMinor(from: "0.2.0")
     ),
 ],
 targets: [
@@ -27,7 +27,7 @@ targets: [
 ]
 ```
 
-See the [v0.1.0 release notes](https://github.com/Weixi779/Refresher/releases/tag/v0.1.0) and [changelog](CHANGELOG.md). To work on the library locally, add a checkout of this repository as a local package instead.
+See the [v0.2.0 release notes](https://github.com/Weixi779/Refresher/releases/tag/v0.2.0) and [changelog](CHANGELOG.md). To work on the library locally, add a checkout of this repository as a local package instead.
 
 ## Use
 
@@ -57,6 +57,8 @@ loading = RefreshController(
 loading.refresh()
 ```
 
+For an initial load that should not reveal a refresh header, call `loading.refresh(showsIndicator: false)`. This keeps request coordination, cancellation and state observation while leaving the header hidden, adding no top inset, and skipping the closing animation. Later calls to `refresh()` and user pulls display the header normally. Duplicate refresh requests are still ignored; their display choice does not change an accepted request.
+
 The controller observes offset, content size, bounds, insets and the pan gesture. After mounting the scroll view, call `loading.contentDidChange()` (for example in `viewDidAppear`). Call it after an external list/layout transaction when UIKit has not emitted a geometry change. The Example also forwards `viewDidLayoutSubviews`.
 
 Provide only `onRefresh` for refresh alone, or only `onLoadMore` for pagination alone. Pagination starts as `.unavailable`; use `.ready` when more data can be requested and `.exhausted` when finished. An initial `loadMoreAvailability: .ready` permits mounted short/empty content to start loading automatically.
@@ -65,8 +67,9 @@ Provide only `onRefresh` for refresh alone, or only `onLoadMore` for pagination 
 
 | Input | Result |
 | --- | --- |
-| Pull past the header height and release | Starts refresh. A cancelled gesture does not. |
+| Pull past the header height and release | Starts refresh and animates back to the refresh height. A cancelled gesture does not. |
 | `refresh()` | Starts even before mounting; reveals the header only if already at the top. |
+| `refresh(showsIndicator: false)` | Runs the same refresh operation without header presentation, top inset contribution or closing animation. |
 | Refresh while a page loads | Cancels that page and starts refresh. |
 | Duplicate request | Ignored. Refresh during its closing animation may start a new refresh. |
 | `loadMore()` | Explicit page request when `.ready` and no operation is running. |
@@ -103,11 +106,13 @@ final class MyFooter: UIView, LoadMoreFooter {
 }
 ```
 
-Pass custom views via `header:` / `footer:`. The controller mounts and sizes these views directly; the views do not start requests or own loading state. `Configuration` sets header/footer heights, preload distance and closing duration. Defaults use system colors, a spinner and a pull arrow; there are no Motion or theme dependencies.
+Pass custom views via `header:` / `footer:`. The controller mounts and sizes these views directly; the views do not start requests or own loading state. `Configuration` sets header/footer heights, preload distance and animation duration. The duration applies to both the release transition and closing; a request that finishes during the release transition closes from its current visual position. Defaults use system colors, a spinner and a pull arrow; there are no Motion or theme dependencies.
 
 Initial replay and later subscriber demand use the same event boundary as state transitions. On MainActor, replay stays synchronous and commands issued inside the callback run after replay returns. Requests made from other executors (including `AsyncPublisher.values`) are forwarded to MainActor. Returned Combine demand is accounted for before queued state changes are published.
 
 `LoadingState` contains separate optional refresh and pagination states because pulling can coexist with an accepted page. A renderer sees the previous committed public snapshot while preparing the next presentation. Subscribers receive that next snapshot only after rendering finishes. As with any publisher, adding asynchronous scheduling operators changes when a subscriber observes the value.
+
+Both visible and silent refreshes publish `.refreshing` → `.finishing` → `.idle` on completion. A silent refresh passes through `.finishing` without waiting for an animation, so these values describe the request lifecycle rather than whether a header is visible.
 
 ## Ownership
 
@@ -116,6 +121,8 @@ Use one controller per scroll view; do not combine it with another refresh contr
 The page normally owns the controller and its view tree. Explicitly call `detach()` before replacing/removing the component on a scroll view that remains alive. Releasing only the controller does **not** promise to remove UI from a surviving scroll view. Deinitialization cancels the request; no asynchronous deinit cleanup or `isolated deinit` is used.
 
 Inset adjustments are additive. Other owners can adjust `contentInset` while loading; preserve existing contributions when doing so (for example `contentInset.top += delta`). `detach()` removes only Refresher's current contribution. UIKit owns adjusted safe-area insets. Layout transitions and keyboard inset changes should complete before `contentDidChange()`.
+
+When composing with a pager or another scroll container, use the existing `state.refresh` to protect a refresh during both `.refreshing` and `.finishing`; avoid realigning its offset while the header is closing. The closing animation withdraws Refresher's own inset contribution, so `.finishing` does not promise a fixed extra inset height. Silent refreshes have the same states but own no refresh space. Each component must apply only its own inset delta, including when it is removed. Header expansion, tab alignment and scroll-to-top behavior remain the container's responsibility.
 
 ## Example and tests
 

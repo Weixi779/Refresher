@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.0 — 2026-09-21
+
+### Changes
+
+- Animate the transition from a released pull to the refresh height, instead of allowing UIKit's inset adjustment to snap there. Fast requests close from the current animation position.
+- Add `refresh(showsIndicator: false)` for initial loading without a refresh header, extra top inset or closing animation. Request state, cancellation and pagination coordination remain unchanged.
+- Document how scroll containers can use `.refreshing` and `.finishing` while preserving each owner's inset contribution.
+- Cover silent refresh completion and failure, cancellation/reset/detach, late callbacks, subsequent visible refreshes, automatic pagination and external insets during closing.
+
+### Upgrade notes
+
+- Update a dependency constrained to the next minor version from `0.1.0` to start at `0.2.0`.
+- Direct `refresh()` calls remain valid. The method is now `refresh(showsIndicator: Bool = true)`; wrap a stored no-argument method reference in a closure, such as `{ loading.refresh() }`.
+- `animationDuration` now controls both the release transition and closing. Platform and tooling requirements remain iOS 16+ and Swift 6 tooling in Swift 5 language mode.
+
+### Validation
+
+- 41 Swift Testing tests (51 parameter-expanded executions) and 5 XCUITest tests passed with Xcode 27.0 on iOS 27.0 simulators.
+- Four additional real-gesture probes covered fast and slow refreshes in both table and collection views.
+- iOS 16 runtime and physical-device behavior were not verified.
+
 ## 0.1.0 — 2026-09-20
 
 Initial release of Refresher, a standalone UIKit pull-to-refresh and pagination package for iOS 16+ with no third-party dependencies. Requires Swift 6 tooling and uses Swift 5 language mode.
