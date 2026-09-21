@@ -31,6 +31,7 @@ final class ScrollBinding {
     private let animate: Animate
     private var observations: [NSKeyValueObservation] = []
     private var animation: UIViewPropertyAnimator?
+    private var showsRefreshIndicator = true
     private var topContribution: CGFloat = 0
     private var bottomContribution: CGFloat = 0
     private let originalBounce: Bool
@@ -97,8 +98,9 @@ final class ScrollBinding {
 
     func render(_ state: LoadingState) {
         if let phase = state.refresh {
-            header?.isHidden = phase == .idle
-            header?.render(phase)
+            let displayedPhase: RefreshState = showsRefreshIndicator ? phase : .idle
+            header?.isHidden = displayedPhase == .idle
+            header?.render(displayedPhase)
         }
         if let phase = state.loadMore {
             let visible = phase != .unavailable
@@ -108,10 +110,11 @@ final class ScrollBinding {
         }
     }
 
-    func beginRefresh(reveal: Bool) {
+    func beginRefresh(reveal: Bool, showsIndicator: Bool = true) {
         animation?.stopAnimation(true)
         animation = nil
-        guard let scrollView else { return }
+        showsRefreshIndicator = showsIndicator
+        guard showsIndicator, let scrollView else { return }
         let wasNearTop = scrollView.contentOffset.y <= -scrollView.adjustedContentInset.top + 1
         setTopContribution(configuration.refreshHeight)
         if reveal, wasNearTop {
@@ -124,6 +127,10 @@ final class ScrollBinding {
 
     func finishRefresh(completion: @escaping () -> Void) {
         animation?.stopAnimation(true)
+        guard showsRefreshIndicator else {
+            completion()
+            return
+        }
         animation = animate(
             configuration.animationDuration,
             { [weak self] in
@@ -135,11 +142,13 @@ final class ScrollBinding {
 
     func didFinishRefresh() {
         animation = nil
+        showsRefreshIndicator = true
     }
 
     func cancelRefresh() {
         animation?.stopAnimation(true)
         animation = nil
+        showsRefreshIndicator = true
         restoreTop()
     }
 
@@ -191,7 +200,7 @@ final class ScrollBinding {
             observe(\.contentSize),
             observe(\.bounds),
             observe(\.contentInset),
-            observe(\.adjustedContentInset)
+            observe(\.adjustedContentInset),
         ]
         observations.append(scrollView.panGestureRecognizer.observe(\.state, options: [.new]) { [weak self] pan, _ in
             MainActor.assumeIsolated { self?.onChange?(.pan(pan.state)) }

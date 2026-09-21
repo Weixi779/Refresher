@@ -54,7 +54,8 @@ public final class RefreshController {
     private enum Kind { case refresh, loadMore }
     private enum Outcome { case success, failure, cancelled }
     private enum Event {
-        case refresh, loadMore, cancel, reset, detach, contentChanged, evaluate
+        case refresh(showsIndicator: Bool)
+        case loadMore, cancel, reset, detach, contentChanged, evaluate
         case scroll(ScrollBinding.Change)
         case setActive(Bool)
         case setAvailability(LoadMoreAvailability)
@@ -158,8 +159,9 @@ public final class RefreshController {
         operation?.task.cancel()
     }
 
-    public func refresh() {
-        send(.refresh)
+    /// Silent refreshes keep the same loading lifecycle without showing a header or adding a top inset.
+    public func refresh(showsIndicator: Bool = true) {
+        send(.refresh(showsIndicator: showsIndicator))
     }
 
     public func loadMore() {
@@ -215,8 +217,8 @@ public final class RefreshController {
     private func consume(_ event: Event) {
         guard attached else { return }
         switch event {
-        case .refresh:
-            beginRefresh(reveal: true)
+        case let .refresh(showsIndicator):
+            beginRefresh(reveal: true, showsIndicator: showsIndicator)
         case .loadMore:
             beginLoadMore(automatic: false)
         case .cancel:
@@ -299,14 +301,14 @@ public final class RefreshController {
         }
     }
 
-    private func beginRefresh(reveal: Bool) {
+    private func beginRefresh(reveal: Bool, showsIndicator: Bool = true) {
         guard active, let onRefresh else { return }
         if operation?.kind == .refresh, refreshState != .finishing { return }
         cancelOperation()
         waitingForUser = false
         precedingPageHeight = nil
         refreshState = .refreshing
-        binding.beginRefresh(reveal: reveal)
+        binding.beginRefresh(reveal: reveal, showsIndicator: showsIndicator)
         start(.refresh, action: onRefresh)
     }
 

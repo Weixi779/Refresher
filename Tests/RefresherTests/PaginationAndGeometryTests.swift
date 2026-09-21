@@ -204,6 +204,51 @@ struct PaginationAndGeometryTests {
         ))
     }
 
+    @Test func finishingRefreshKeepsItsStateAndPreservesOtherInsetOwners() async {
+        let fixture = ScrollFixture()
+        fixture.scrollView.contentInset = UIEdgeInsets(top: 244, left: 4, bottom: 21, right: 7)
+        fixture.scrollView.contentOffset.y = -244
+        let header = RecordingHeader()
+        let request = ControlledOperation()
+        let animation = AnimationDriver()
+        var pageCalls = 0
+        let controller = RefreshController(
+            scrollView: fixture.scrollView,
+            header: header,
+            loadMoreAvailability: .ready,
+            onRefresh: request.run,
+            onLoadMore: { pageCalls += 1 },
+            animate: animation.animate
+        )
+        controller.refresh()
+        await request.started()
+        #expect(fixture.scrollView.contentInset.top == 304)
+        fixture.scrollView.contentInset.top += 17
+        request.finish()
+        await waitForState(controller) { $0.refresh == .finishing }
+        #expect(!header.isHidden)
+        #expect(header.states.last == .finishing)
+        // The closing animation withdraws our contribution while the request
+        // remains in finishing; a container must not assume a fixed extra height.
+        #expect(fixture.scrollView.contentInset.top == 261)
+        fixture.scrollView.contentInset.top -= 20
+        fixture.scrollView.contentInset.bottom += 9
+        controller.contentDidChange()
+        controller.loadMore()
+        await drainMainQueue()
+        #expect(controller.state.refresh == .finishing)
+        #expect(!header.isHidden)
+        #expect(pageCalls == 0)
+
+        #expect(animation.completions.count == 1)
+        animation.completions[0]()
+        #expect(controller.state.refresh == .idle)
+        #expect(header.isHidden)
+        #expect(fixture.scrollView.contentInset == UIEdgeInsets(top: 241, left: 4, bottom: 78, right: 7))
+        controller.detach()
+        #expect(fixture.scrollView.contentInset == UIEdgeInsets(top: 241, left: 4, bottom: 30, right: 7))
+    }
+
     @Test func headerAndFooterTrackFractionalWidthAndContentSize() {
         let fixture = ScrollFixture()
         let header = RecordingHeader()
