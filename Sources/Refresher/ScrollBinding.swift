@@ -111,13 +111,28 @@ final class ScrollBinding {
     }
 
     func beginRefresh(reveal: Bool, showsIndicator: Bool = true) {
-        animation?.stopAnimation(true)
-        animation = nil
+        stopAnimationAtCurrentPosition()
         showsRefreshIndicator = showsIndicator
         guard showsIndicator, let scrollView else { return }
+        if !reveal {
+            // Updating the inset can clamp UIKit's offset; animate both together.
+            animation = animate(
+                configuration.animationDuration,
+                { [weak self] in
+                    guard let self, let scrollView = self.scrollView else { return }
+                    self.setTopContribution(self.configuration.refreshHeight)
+                    scrollView.setContentOffset(CGPoint(
+                        x: scrollView.contentOffset.x,
+                        y: -scrollView.adjustedContentInset.top
+                    ), animated: false)
+                },
+                {}
+            )
+            return
+        }
         let wasNearTop = scrollView.contentOffset.y <= -scrollView.adjustedContentInset.top + 1
         setTopContribution(configuration.refreshHeight)
-        if reveal, wasNearTop {
+        if wasNearTop {
             scrollView.setContentOffset(CGPoint(
                 x: scrollView.contentOffset.x,
                 y: -scrollView.adjustedContentInset.top
@@ -126,7 +141,7 @@ final class ScrollBinding {
     }
 
     func finishRefresh(completion: @escaping () -> Void) {
-        animation?.stopAnimation(true)
+        stopAnimationAtCurrentPosition()
         guard showsRefreshIndicator else {
             completion()
             return
@@ -146,8 +161,7 @@ final class ScrollBinding {
     }
 
     func cancelRefresh() {
-        animation?.stopAnimation(true)
-        animation = nil
+        stopAnimationAtCurrentPosition()
         showsRefreshIndicator = true
         restoreTop()
     }
@@ -163,6 +177,14 @@ final class ScrollBinding {
             scrollView?.alwaysBounceVertical = originalBounce
         }
         scrollView = nil
+    }
+
+    private func stopAnimationAtCurrentPosition() {
+        if let animation, animation.state == .active {
+            animation.stopAnimation(false)
+            animation.finishAnimation(at: .current)
+        }
+        animation = nil
     }
 
     private func restoreTop() {
