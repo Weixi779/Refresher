@@ -76,7 +76,7 @@ Provide only `onRefresh` for refresh alone, or only `onLoadMore` for pagination 
 | Near the bottom | Automatic page request when mounted, active and `.ready`. |
 | Successful pagination | Re-evaluates after publishing completion. Continues automatically only after content height grows. |
 | Thrown error / cancellation error | Ends loading; automatic pagination waits for a new drag or explicit request. |
-| `isActive = false` | Blocks new requests without cancelling accepted work. This is an admission switch, not a visibility binding. |
+| `isActive = false` | Blocks new requests without cancelling accepted work. Also ends active return animations; reactivation starts any pending forced refresh. |
 | `cancel()` | Cancels current work and waits for fresh user interaction. |
 | `reset()` | Cancels old work and clears pagination gates for a replaced data set. Keeps the supplied availability. |
 | `detach()` | Cancels work, removes indicators, invalidates observations and removes owned inset contributions synchronously. Terminal and idempotent. |
@@ -84,6 +84,37 @@ Provide only `onRefresh` for refresh alone, or only `onLoadMore` for pagination 
 Operations run on `MainActor` and may suspend. Check cancellation before committing data, and await your own list updates before returning. Refresher ignores stale results for its own state; it cannot undo arbitrary writes made by a cancellation-ignoring closure. Handle error presentation in the closure and rethrow so automatic loading can stop. No retry footer or application error policy is imposed.
 
 Automatic pagination is deliberately bounded by visible progress. A backend may return an empty page with another cursor: fetch through that condition inside your operation, or explicitly request another page. Content height is a guard against repeated automatic no-ops, not a claim that the server has no more data.
+
+## Forced refresh and coordinated return (unreleased)
+
+`forceRefresh(showsIndicator:)` replaces current work. While inactive it retains one
+coalesced request for the next activation. A failed forced request stays pending
+until another activation or explicit refresh; it never retries in a loop. `cancel()`
+preserves that pending request; `reset()` and `detach()` clear it. Pending forced
+refreshes block pagination.
+
+Use `refresh(scrollToTop: true)` to return from a scrolled position while refreshing,
+or `scrollToTop(animated:)` to return without starting a request. Forward
+`scrollViewDidEndScrollingAnimation` from your scroll view delegate to the controller.
+Repeated return requests share the current return. Dragging or deactivation stops it.
+Inside `onRefresh`, call `try await loading.prepareForRefreshContentUpdate()` after
+fetching and before replacing list content so short or empty content cannot clamp
+against a leftover refresh inset.
+
+For collapsible headers, set `refreshOriginProvider` to a stable fully expanded
+content offset, such as `{ [weak pager] in pager?.expandedTopOffset(of: pageID) }`.
+A nil result temporarily blocks visible refresh requests. Refresher owns only its
+own inset contribution and clips the indicator below that origin; it has no runtime
+or package dependency on Pager.
+
+`Configuration.refreshCompletionDelay` adds an optional pause after the response
+and reveal finish. `onReturnActivityChanged` lets a host coordinate its layout with
+native return animations. The default animation duration is now 0.35 seconds.
+Exhausted footers are hidden and their inset is removed; other inset owners are preserved.
+
+Run `Scripts/test-pager-integration.sh /path/to/Pager SIMULATOR_UDID` to exercise
+cross-library regressions against a local Pager checkout. The script builds a temporary
+combined test package; ordinary package tests do not require Pager.
 
 ## Observe or customize
 

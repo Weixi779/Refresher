@@ -14,6 +14,8 @@ struct StateSubscriptionTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: {}
         )
         if refreshing { controller.refresh() }
@@ -43,6 +45,8 @@ struct StateSubscriptionTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: {}
         )
         controller.refresh()
@@ -76,6 +80,8 @@ struct StateSubscriptionTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: {}
         )
         var sequence: [RefreshState?] = []
@@ -99,6 +105,8 @@ struct StateSubscriptionTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: {}
         )
         let values = controller.states.handleEvents(receiveOutput: { state in
@@ -117,7 +125,7 @@ struct StateSubscriptionTests {
 
     @Test func savedPublisherDoesNotRetainController() throws {
         let fixture = ScrollFixture()
-        var controller: RefreshController? = RefreshController(scrollView: fixture.scrollView, onRefresh: {})
+        var controller: RefreshController? = RefreshController(scrollView: fixture.scrollView, header: nil, footer: nil, onRefresh: {})
         weak var weakController: RefreshController?
         weakController = controller
         let publisher = try #require(controller?.states)

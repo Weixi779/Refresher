@@ -14,6 +14,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: page.run
         )
@@ -34,6 +36,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: { calls += 1 }
         )
@@ -53,6 +57,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: page.run
         )
@@ -76,6 +82,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: page.run
         )
@@ -98,6 +106,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: refresh.run,
             onLoadMore: { pageCalls += 1 }
         )
@@ -120,6 +130,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: page.run
         )
@@ -142,6 +154,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: page.run
         )
@@ -160,6 +174,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             loadMoreAvailability: .ready,
             onLoadMore: page.run
         )
@@ -184,6 +200,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: DefaultLoadMoreFooter(),
             loadMoreAvailability: .ready,
             onRefresh: {},
             onLoadMore: {}
@@ -240,8 +258,8 @@ struct PaginationAndGeometryTests {
         #expect(!header.isHidden)
         #expect(pageCalls == 0)
 
-        #expect(animation.completions.count == 1)
-        animation.completions[0]()
+        #expect(animation.completions.count == 2)
+        animation.completions[1]()
         #expect(controller.state.refresh == .idle)
         #expect(header.isHidden)
         #expect(fixture.scrollView.contentInset == UIEdgeInsets(top: 241, left: 4, bottom: 78, right: 7))
@@ -267,7 +285,7 @@ struct PaginationAndGeometryTests {
         #expect(header.frame.width == 375.5)
         #expect(footer.frame.width == 375.5)
         #expect(footer.frame.minY == 987.5)
-        #expect(header.superview === fixture.scrollView)
+        #expect(header.superview?.superview === fixture.scrollView)
         #expect(footer.superview === fixture.scrollView)
     }
 
@@ -277,6 +295,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: {}
         )
         controller.refresh()
@@ -292,6 +312,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: nil,
             onRefresh: {}
         )
         let resting = -fixture.scrollView.adjustedContentInset.top
@@ -307,6 +329,8 @@ struct PaginationAndGeometryTests {
         let controller = RefreshController(
             scrollView: fixture.scrollView,
             configuration: immediate,
+            header: nil,
+            footer: DefaultLoadMoreFooter(),
             onLoadMore: page.run
         )
         #expect(fixture.scrollView.contentInset == .zero)
@@ -320,5 +344,41 @@ struct PaginationAndGeometryTests {
         page.finish()
         await waitForState(controller) { $0.loadMore == .unavailable }
         #expect(fixture.scrollView.contentInset == .zero)
+    }
+
+    @Test func exhaustionRemovesOnlyTheFooterInsetAfterTheActivePageFinishes() async {
+        let fixture = ScrollFixture()
+        fixture.scrollView.contentInset.bottom = 21
+        let footer = DefaultLoadMoreFooter()
+        let page = ControlledOperation()
+        let controller = RefreshController(
+            scrollView: fixture.scrollView,
+            configuration: immediate,
+            header: nil,
+            footer: footer,
+            loadMoreAvailability: .ready,
+            onLoadMore: page.run
+        )
+        defer { controller.detach() }
+
+        #expect(fixture.scrollView.contentInset.bottom == 69)
+        controller.loadMore()
+        await page.started()
+        controller.loadMoreAvailability = .exhausted
+        #expect(controller.state.loadMore == .loading)
+        #expect(!footer.isHidden)
+        #expect(fixture.scrollView.contentInset.bottom == 69)
+
+        fixture.scrollView.contentInset.bottom += 9
+        page.finish()
+        await waitForState(controller) { $0.loadMore == .exhausted }
+        #expect(footer.isHidden)
+        #expect(fixture.scrollView.contentInset.bottom == 30)
+
+        controller.loadMoreAvailability = .ready
+        #expect(!footer.isHidden)
+        #expect(fixture.scrollView.contentInset.bottom == 78)
+        controller.detach()
+        #expect(fixture.scrollView.contentInset.bottom == 30)
     }
 }

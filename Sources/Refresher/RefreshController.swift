@@ -9,25 +9,33 @@ public final class RefreshController {
     public typealias Operation = @MainActor () async throws -> Void
 
     public struct Configuration {
+        /// Optional host layout cooperation; balanced around native return animations only.
+        public let onReturnActivityChanged: (@MainActor (Bool) -> Void)?
         public let refreshHeight: CGFloat
         public let loadMoreHeight: CGFloat
         public let preloadDistance: CGFloat
         public let animationDuration: TimeInterval
+        public let refreshCompletionDelay: TimeInterval
 
         public init(
             refreshHeight: CGFloat = 60,
             loadMoreHeight: CGFloat = 48,
             preloadDistance: CGFloat = 160,
-            animationDuration: TimeInterval = 0.25
+            animationDuration: TimeInterval = 0.35,
+            refreshCompletionDelay: TimeInterval = 0,
+            onReturnActivityChanged: (@MainActor (Bool) -> Void)? = nil
         ) {
             precondition(refreshHeight.isFinite && refreshHeight > 0)
             precondition(loadMoreHeight.isFinite && loadMoreHeight > 0)
             precondition(preloadDistance.isFinite && preloadDistance >= 0)
             precondition(animationDuration.isFinite && animationDuration >= 0)
+            precondition(refreshCompletionDelay.isFinite && refreshCompletionDelay >= 0)
+            self.onReturnActivityChanged = onReturnActivityChanged
             self.refreshHeight = refreshHeight
             self.loadMoreHeight = loadMoreHeight
             self.preloadDistance = preloadDistance
             self.animationDuration = animationDuration
+            self.refreshCompletionDelay = refreshCompletionDelay
         }
     }
 
@@ -51,10 +59,19 @@ public final class RefreshController {
         set { send(.setAvailability(newValue)) }
     }
 
+    /// Stable resting origin supplied by a container with collapsible chrome.
+    /// Visible refresh requests are ignored while the provider returns nil.
+    public var refreshOriginProvider: (() -> CGFloat?)? {
+        get { binding.refreshOriginProvider }
+        set { binding.refreshOriginProvider = newValue }
+    }
+
     private enum Kind { case refresh, loadMore }
     private enum Outcome { case success, failure, cancelled }
     private enum Event {
-        case refresh(showsIndicator: Bool)
+        case refresh(showsIndicator: Bool, scrollToTop: Bool)
+        case forceRefresh(showsIndicator: Bool)
+        case scrollToTop(animated: Bool)
         case loadMore, cancel, reset, detach, contentChanged, evaluate
         case scroll(ScrollBinding.Change)
         case setActive(Bool)
@@ -66,6 +83,7 @@ public final class RefreshController {
     private struct RunningOperation {
         let id: UInt64
         let kind: Kind
+        let refreshRevision: UInt64
         let task: Task<Void, Never>
     }
 
@@ -81,6 +99,8 @@ public final class RefreshController {
     private var dragging = false
     private var operation: RunningOperation?
     private var nextID: UInt64 = 0
+    private var refreshRevision: UInt64 = 0
+    private var pendingRefreshIndicator: Bool?
     private var waitingForUser = false
     private var precedingPageHeight: CGFloat?
     private var events: [Event] = []
@@ -116,7 +136,9 @@ public final class RefreshController {
         loadMoreAvailability: LoadMoreAvailability = .unavailable,
         onRefresh: Operation? = nil,
         onLoadMore: Operation? = nil,
-        animate: ScrollBinding.Animate?
+        animate: ScrollBinding.Animate?,
+        scroll: @escaping ScrollToTopController.Scroll = { $0.setContentOffset($1, animated: $2) },
+        sleep: @escaping @MainActor (TimeInterval) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
     ) {
         precondition(onRefresh != nil || onLoadMore != nil, "Provide at least one loading operation")
         self.configuration = configuration
@@ -137,14 +159,14 @@ public final class RefreshController {
                 header: header,
                 footer: footer,
                 configuration: configuration,
-                animate: animate
+                animate: animate, scroll: scroll, sleep: sleep
             )
         } else {
             binding = ScrollBinding(
                 scrollView: scrollView,
                 header: header,
                 footer: footer,
-                configuration: configuration
+                configuration: configuration, scroll: scroll, sleep: sleep
             )
         }
         // Even initial rendering can call external code; use the same event boundary.
@@ -159,20 +181,42 @@ public final class RefreshController {
         operation?.task.cancel()
     }
 
-    /// Silent refreshes keep the same loading lifecycle without showing a header or adding a top inset.
-    public func refresh(showsIndicator: Bool = true) {
-        send(.refresh(showsIndicator: showsIndicator))
+    /// Silent refreshes keep the same loading lifecycle without changing the header or top inset.
+    /// `scrollToTop` owns the complete return animation and is ignored for silent refreshes.
+    public func refresh(showsIndicator: Bool = true, scrollToTop: Bool = false) {
+        send(.refresh(showsIndicator: showsIndicator, scrollToTop: scrollToTop))
+    }
+
+    /// Return without starting a request or adding refresh space (for example, status bar taps).
+    public func scrollToTop(animated: Bool = true) {
+        send(.scrollToTop(animated: animated))
+    }
+
+    /// Call inside `onRefresh` after fetching data and before updating the list.
+    /// A pending return settles at the resting top before list updates can change
+    /// its geometry. Dragging, deactivation, or cancellation releases the wait.
+    public func prepareForRefreshContentUpdate() async throws {
+        try Task.checkCancellation()
+        try await binding.prepareForRefreshContentUpdate()
+        try Task.checkCancellation()
+    }
+
+    /// Replace current work, or defer until active. Repeated inactive requests coalesce.
+    /// Failure retains the request until a new activation or an explicit refresh; it does not loop.
+    public func forceRefresh(showsIndicator: Bool = true) {
+        send(.forceRefresh(showsIndicator: showsIndicator))
     }
 
     public func loadMore() {
         send(.loadMore)
     }
 
+    /// Cancel current work without discarding a pending forced refresh.
     public func cancel() {
         send(.cancel)
     }
 
-    /// Cancel previous work and clear pagination gates when replacing the data set.
+    /// Cancel previous work and clear pending refreshes and pagination gates when replacing the data set.
     public func reset() {
         send(.reset)
     }
@@ -185,6 +229,11 @@ public final class RefreshController {
     /// Recheck after mounting or after an external list/layout transaction has completed.
     public func contentDidChange() {
         send(.contentChanged)
+    }
+
+    /// Forward the scroll view delegate callback when using `refresh(scrollToTop: true)`.
+    public func scrollViewDidEndScrollingAnimation() {
+        send(.scroll(.scrollingAnimationEnded))
     }
 
     func scrollDidChange(_ change: ScrollBinding.Change) {
@@ -217,25 +266,37 @@ public final class RefreshController {
     private func consume(_ event: Event) {
         guard attached else { return }
         switch event {
-        case let .refresh(showsIndicator):
-            beginRefresh(reveal: true, showsIndicator: showsIndicator)
+        case let .refresh(showsIndicator, scrollToTop):
+            beginRefresh(reveal: true, showsIndicator: showsIndicator, scrollToTop: scrollToTop)
+        case let .scrollToTop(animated):
+            binding.scrollToTop(animated: animated)
+        case let .forceRefresh(showsIndicator):
+            guard onRefresh != nil else { return }
+            refreshRevision &+= 1
+            pendingRefreshIndicator = showsIndicator
+            beginPendingRefresh()
         case .loadMore:
             beginLoadMore(automatic: false)
         case .cancel:
             cancelOperation()
             waitingForUser = true
         case .reset:
+            pendingRefreshIndicator = nil
             cancelOperation()
             waitingForUser = false
             precedingPageHeight = nil
             scheduleEvaluation()
         case .detach:
+            pendingRefreshIndicator = nil
             cancelOperation()
             attached = false
             active = false
             binding.detach()
         case let .setActive(value):
+            let becameActive = !active && value
             active = value
+            if !value { binding.endReturn(interrupted: true) }
+            if becameActive { beginPendingRefresh() }
             if !value, case .pulling = refreshState { refreshState = .idle }
             scheduleEvaluation()
         case let .setAvailability(value):
@@ -263,12 +324,15 @@ public final class RefreshController {
 
     private func handleScroll(_ change: ScrollBinding.Change) {
         switch change {
+        case .scrollingAnimationEnded:
+            binding.endReturn(interrupted: false)
         case .geometry:
             binding.layout()
             scheduleEvaluation()
         case let .pan(phase):
             switch phase {
             case .began:
+                binding.interruptAnimation(gestureTakeover: true)
                 dragging = true
                 waitingForUser = false
                 precedingPageHeight = nil
@@ -301,19 +365,31 @@ public final class RefreshController {
         }
     }
 
-    private func beginRefresh(reveal: Bool, showsIndicator: Bool = true) {
+    private func beginPendingRefresh() {
+        guard active, let showsIndicator = pendingRefreshIndicator else { return }
+        if let operation, operation.kind == .refresh,
+           operation.refreshRevision == refreshRevision, refreshState == .refreshing { return }
+        beginRefresh(reveal: true, showsIndicator: showsIndicator, replacingCurrent: true)
+    }
+
+    private func beginRefresh(reveal: Bool, showsIndicator: Bool = true, replacingCurrent: Bool = false, scrollToTop: Bool = false) {
         guard active, let onRefresh else { return }
-        if operation?.kind == .refresh, refreshState != .finishing { return }
+        if !replacingCurrent, operation?.kind == .refresh, refreshState != .finishing {
+            if scrollToTop, showsIndicator { binding.scrollToTopDuringRefresh() }
+            return
+        }
+        guard !showsIndicator || binding.refreshOriginOffsetY != nil else { return }
         cancelOperation()
         waitingForUser = false
         precedingPageHeight = nil
         refreshState = .refreshing
-        binding.beginRefresh(reveal: reveal, showsIndicator: showsIndicator)
+        binding.beginRefresh(reveal: reveal, showsIndicator: showsIndicator, scrollToTop: scrollToTop)
         start(.refresh, action: onRefresh)
     }
 
     private func beginLoadMore(automatic: Bool) {
-        guard active, availability == .ready, operation == nil, let onLoadMore else { return }
+        guard active, pendingRefreshIndicator == nil, availability == .ready,
+              operation == nil, let onLoadMore else { return }
         let geometry = binding.geometry
         if automatic {
             guard !waitingForUser, geometry.isMounted, geometry.viewportHeight > 0,
@@ -345,6 +421,7 @@ public final class RefreshController {
         operation = RunningOperation(
             id: id,
             kind: kind,
+            refreshRevision: refreshRevision,
             task: task
         )
     }
@@ -353,6 +430,9 @@ public final class RefreshController {
         guard let operation, operation.id == id else { return }
         if outcome != .success { waitingForUser = true }
         if operation.kind == .refresh {
+            if outcome == .success, operation.refreshRevision == refreshRevision {
+                pendingRefreshIndicator = nil
+            }
             refreshState = .finishing
             binding.finishRefresh { [weak self] in self?.send(.settled(id)) }
         } else {

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Retain and coalesce forced refreshes across inactive periods and failed requests.
+- Coordinate native return-to-top with refresh completion and content replacement.
+- Support stable refresh origins for collapsible headers and clip indicators below chrome.
+- Wait for reveal completion, support an optional completion pause, and release waits on interruption.
+- Hide exhausted footers and remove their owned inset.
+- Isolate animation and delay lifetimes in regression tests while preserving default indicators.
+
 ## 0.2.0 — 2026-09-21
 
 ### Changes

@@ -53,8 +53,8 @@ struct SilentRefreshTests {
         #expect(fixture.scrollView.contentInset.top == 79)
         request.finish(2)
         await waitForState(controller) { $0.refresh == .finishing }
-        #expect(animation.completions.count == 1)
-        animation.completions[0]()
+        #expect(animation.completions.count == (offset == -19 ? 2 : 1))
+        animation.completions.last?()
         #expect(controller.state.refresh == .idle)
         #expect(fixture.scrollView.contentInset.top == 19)
     }
@@ -161,19 +161,19 @@ struct SilentRefreshTests {
         await request.started()
         request.finish()
         await waitForState(controller) { $0.refresh == .finishing }
-        #expect(animation.completions.count == 1)
+        #expect(animation.completions.count == 2)
         controller.refresh(showsIndicator: false)
         await request.started(2)
         fixture.scrollView.contentInset.top += 17
         fixture.scrollView.contentOffset.y = -261
-        animation.completions[0]()
+        animation.completions[1]()
         #expect(controller.state.refresh == .refreshing)
         #expect(header.isHidden)
         #expect(fixture.scrollView.contentInset.top == 261)
 
         request.finish(2)
         await waitForState(controller) { $0.refresh == .idle }
-        #expect(animation.completions.count == 1)
+        #expect(animation.completions.count == 2)
         #expect(fixture.scrollView.contentInset.top == 261)
         #expect(fixture.scrollView.contentOffset.y == -261)
         #expect(header.isHidden)

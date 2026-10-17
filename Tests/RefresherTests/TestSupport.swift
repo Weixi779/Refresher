@@ -28,8 +28,11 @@ final class ControlledOperation {
 
     func finish(_ call: Int = 1, failing: Bool = false) {
         let continuation = continuations.removeValue(forKey: call)
-        if failing { continuation?.resume(throwing: Failure.requested) }
-        else { continuation?.resume() }
+        if failing {
+            continuation?.resume(throwing: Failure.requested)
+        } else {
+            continuation?.resume()
+        }
     }
 
     func finishAll() {
@@ -82,11 +85,14 @@ final class RecordingHeader: UIView, RefreshHeader {
 @MainActor
 final class AnimationDriver {
     var completions: [() -> Void] = []
+    var curves: [UIView.AnimationCurve] = []
     func animate(
         _: TimeInterval,
+        curve: UIView.AnimationCurve,
         changes: @escaping () -> Void,
         completion: @escaping () -> Void
-    ) -> UIViewPropertyAnimator? {
+    ) -> (any RefreshAnimation)? {
+        curves.append(curve)
         changes()
         completions.append(completion)
         return nil

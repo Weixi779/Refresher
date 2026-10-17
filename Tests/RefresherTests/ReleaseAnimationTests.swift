@@ -39,43 +39,29 @@ struct ReleaseAnimationTests {
         #expect(fixture.scrollView.contentOffset.y == -19)
     }
 
-    @Test func quickCompletionClosesFromTheCurrentReleasePosition() async throws {
-        let fixture = ScrollFixture(mounted: true)
+    @Test func quickCompletionWaitsForReleaseBeforeClosing() async throws {
+        let fixture = ScrollFixture()
         let request = ControlledOperation()
-        var animations: [UIViewPropertyAnimator] = []
-        var endPositions: [UIViewAnimatingPosition] = []
+        let animations = ControlledRefreshAnimations()
         let controller = RefreshController(
             scrollView: fixture.scrollView,
-            configuration: .init(animationDuration: 1),
             onRefresh: request.run,
-            animate: { duration, changes, completion in
-                let animation = UIViewPropertyAnimator(duration: duration, curve: .easeOut, animations: changes)
-                animation.addCompletion { position in
-                    endPositions.append(position)
-                    completion()
-                }
-                animations.append(animation)
-                animation.startAnimation()
-                return animation
-            }
+            animate: animations.animate
         )
+        defer { controller.detach(); request.finishAll() }
         fixture.scrollView.contentOffset.y = -140
         controller.scrollDidChange(.pan(.began))
         controller.scrollDidChange(.pan(.ended))
         await request.started()
-        let release = try #require(animations.first)
-        release.pauseAnimation()
-        release.fractionComplete = 0.5
-
+        let release = try #require(animations.sessions.first)
         request.finish()
         await waitForState(controller) { $0.refresh == .finishing }
-        #expect(endPositions == [.current])
-        #expect(release.state == .inactive)
-        try #require(animations.count == 2)
-        let closing = animations[1]
-        closing.stopAnimation(false)
-        closing.finishAnimation(at: .end)
-        #expect(endPositions == [.current, .end])
+        #expect(release.isActive)
+        #expect(animations.sessions.count == 1)
+        release.finish(true)
+        await drainMainQueue()
+        try #require(animations.sessions.count == 2)
+        animations.sessions[1].finish(true)
         #expect(controller.state.refresh == .idle)
         #expect(fixture.scrollView.contentInset.top == 0)
         #expect(fixture.scrollView.contentOffset.y == 0)
