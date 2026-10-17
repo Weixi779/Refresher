@@ -8,7 +8,7 @@ One controller owns loading. Your async closures own data. Headers and footers o
 
 Requires iOS 16+ and Swift 6 tooling (Xcode 16+). The package uses Swift 5 language mode.
 
-In Xcode, choose **File → Add Package Dependencies**, enter `https://github.com/Weixi779/Refresher.git`, and select **Up to Next Minor Version** starting at **0.2.0**. Link the `Refresher` product to your app target.
+In Xcode, choose **File → Add Package Dependencies**, enter `https://github.com/Weixi779/Refresher.git`, and select **Up to Next Minor Version** starting at **0.3.0**. Link the `Refresher` product to your app target.
 
 For a `Package.swift` dependency:
 
@@ -16,7 +16,7 @@ For a `Package.swift` dependency:
 dependencies: [
     .package(
         url: "https://github.com/Weixi779/Refresher.git",
-        .upToNextMinor(from: "0.2.0")
+        .upToNextMinor(from: "0.3.0")
     ),
 ],
 targets: [
@@ -27,7 +27,7 @@ targets: [
 ]
 ```
 
-See the [v0.2.0 release notes](https://github.com/Weixi779/Refresher/releases/tag/v0.2.0) and [changelog](CHANGELOG.md). To work on the library locally, add a checkout of this repository as a local package instead.
+See the [v0.3.0 release notes](https://github.com/Weixi779/Refresher/releases/tag/v0.3.0) and [changelog](CHANGELOG.md). To work on the library locally, add a checkout of this repository as a local package instead.
 
 ## Use
 
@@ -85,7 +85,7 @@ Operations run on `MainActor` and may suspend. Check cancellation before committ
 
 Automatic pagination is deliberately bounded by visible progress. A backend may return an empty page with another cursor: fetch through that condition inside your operation, or explicitly request another page. Content height is a guard against repeated automatic no-ops, not a claim that the server has no more data.
 
-## Forced refresh and coordinated return (unreleased)
+## Forced refresh and coordinated return
 
 `forceRefresh(showsIndicator:)` replaces current work. While inactive it retains one
 coalesced request for the next activation. A failed forced request stays pending

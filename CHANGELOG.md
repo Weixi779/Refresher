@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-10-17
 
 - Retain and coalesce forced refreshes across inactive periods and failed requests.
 - Coordinate native return-to-top with refresh completion and content replacement.
@@ -8,6 +8,18 @@
 - Wait for reveal completion, support an optional completion pause, and release waits on interruption.
 - Hide exhausted footers and remove their owned inset.
 - Isolate animation and delay lifetimes in regression tests while preserving default indicators.
+
+### Upgrade notes
+
+- Existing direct `refresh()` and `refresh(showsIndicator:)` calls still compile. The full method is now `refresh(showsIndicator:scrollToTop:)`; wrap stored one-argument method references in a closure, for example `{ loading.refresh(showsIndicator: $0) }`.
+- Default animation duration changes from 0.25 to 0.35 seconds. Fast responses wait for the reveal before closing; exhausted footers no longer reserve space.
+- Native return APIs require forwarding `scrollViewDidEndScrollingAnimation`. The configured duration does not set native scroll duration; zero disables animation.
+- Default indicators and initializer defaults remain available. iOS 16 and Swift 6 tooling in Swift 5 language mode remain unchanged.
+
+### Validation
+
+- 74 package tests, 8 Pager/Refresher integration tests, and all 5 existing example UI tests passed with Xcode 27.1 on iOS 27.0.
+- No physical-device or iOS 16 runtime validation was performed for this release.
 
 ## 0.2.0 — 2026-09-21
 
